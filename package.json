@@ -1,7 +1,7 @@
 {
   "name": "httpntlm-maa",
   "description": "fork of the famous httpntlm module by SamDecrock which is a library to do HTTP NTLM authentication, added an option to enable/disable strict ntlm",
-  "version": "1.7.7",
+  "version": "1.7.8",
   "dependencies": {
     "httpreq": ">=0.4.22",
     "underscore": "~1.7.0"
