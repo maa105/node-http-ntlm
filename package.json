@@ -1,14 +1,14 @@
 {
-  "name": "httpntlm",
-  "description": "httpntlm is a Node.js library to do HTTP NTLM authentication",
-  "version": "1.7.6",
+  "name": "httpntlm-maa",
+  "description": "fork of the famous httpntlm module by SamDecrock which is a library to do HTTP NTLM authentication, added an option to enable/disable strict ntlm",
+  "version": "1.7.7",
   "dependencies": {
     "httpreq": ">=0.4.22",
     "underscore": "~1.7.0"
   },
   "author": {
-    "name": "Sam Decrock",
-    "url": "https://github.com/SamDecrock/"
+    "name": "maa105",
+    "url": "https://github.com/maa105/"
   },
   "bugs": {
     "url": "https://github.com/SamDecrock/node-http-ntlm/issues"
@@ -18,7 +18,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/SamDecrock/node-http-ntlm.git"
+    "url": "git://github.com/maa105/node-http-ntlm.git"
   },
   "main": "./httpntlm",
   "licenses": [

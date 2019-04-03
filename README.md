@@ -1,4 +1,6 @@
-# httpntlm
+# httpntlm-maa
+
+It's a port from the [SamDecrock](https://github.com/SamDecrock) [httpntlm](https://github.com/SamDecrock/node-http-ntlm) module
 
 __httpntlm__ is a Node.js library to do HTTP NTLM authentication
 
@@ -6,14 +8,14 @@ It's a port from the Python libary [python-ntml](https://code.google.com/p/pytho
 
 ## Install
 
-You can install __httpntlm__ using the Node Package Manager (npm):
+You can install __httpntlm-maa__ using the Node Package Manager (npm):
 
-    npm install httpntlm
+    npm install httpntlm-maa
 
 ## How to use
 
 ```js
-var httpntlm = require('httpntlm');
+var httpntlm = require('httpntlm-maa');
 
 httpntlm.get({
     url: "https://someurl.com",
@@ -34,7 +36,7 @@ It supports __http__ and __https__.
 ## pre-encrypt the password
 ```js
 
-var httpntlm = require('httpntlm');
+var httpntlm = require('httpntlm-maa');
 var ntlm = httpntlm.ntlm;
 var lm = ntlm.create_LM_hashed_password('Azx123456');
 var nt = ntlm.create_NT_hashed_password('Azx123456');
@@ -100,7 +102,7 @@ You can also pass along all other options of [httpreq](https://github.com/SamDec
 If you want to use the NTLM-functions yourself, you can access the ntlm-library like this (https example):
 
 ```js
-var ntlm = require('httpntlm').ntlm;
+var ntlm = require('httpntlm-maa').ntlm;
 var async = require('async');
 var httpreq = require('httpreq');
 var HttpsAgent = require('agentkeepalive').HttpsAgent;
