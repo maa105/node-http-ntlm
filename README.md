@@ -1,6 +1,6 @@
 # httpntlm-maa
 
-It's a port from the [SamDecrock](https://github.com/SamDecrock) [httpntlm](https://github.com/SamDecrock/node-http-ntlm) module
+It's a fork from the [SamDecrock](https://github.com/SamDecrock) [httpntlm](https://github.com/SamDecrock/node-http-ntlm) module
 
 __httpntlm__ is a Node.js library to do HTTP NTLM authentication
 
