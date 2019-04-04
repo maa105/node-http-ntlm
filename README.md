@@ -22,7 +22,8 @@ httpntlm.get({
     username: 'm$',
     password: 'stinks',
     workstation: 'choose.something',
-    domain: ''
+    domain: '',
+    ntlm: { strict: false }
 }, function(err, res) {
     if(err) return err;
 
@@ -58,7 +59,7 @@ httpntlm.get({
     nt_password: nt,
     workstation: 'choose.something',
     domain: '',
-    ntlm: { strict: true }
+    ntlm: { strict: false }
 }, function(err, res) {
     if(err) return err;
 
@@ -87,7 +88,7 @@ httpntlm.get({
 - `password:` _{String}_   Password. (Required)
 - `workstation:` _{String}_ Name of workstation or `''`.
 - `domain:`   _{String}_   Name of domain or `''`.
-- `ntlm`: _{Object}_ with boolean property strict
+- `ntlm`: _{Object}_ [Optional] with boolean property strict
 
 if you already got the encrypted password,you should use this two param to replace the 'password' param.
 
