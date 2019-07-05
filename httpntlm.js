@@ -8,7 +8,6 @@
 
 'use strict';
 
-var url = require('url');
 var ntlm = require('./ntlm');
 var axios = require('axios');
 var _ = require('underscore');
@@ -19,11 +18,6 @@ exports.method = function(method, options, finalCallback) {
 
   // extract non-ntlm-options:
   var httpreqOptions = _.omit(options, 'url', 'username', 'password', 'workstation', 'domain');
-
-  // is https?
-  var isHttps = false;
-  var reqUrl = url.parse(options.url);
-  if(reqUrl.protocol == 'https:') isHttps = true;
 
   // build type1 request:
 
@@ -56,7 +50,17 @@ exports.method = function(method, options, finalCallback) {
       callback(null, res);
     })
     .catch(function(err) {
-      callback(err);
+      if(err.response) {
+        if(err.response.status === 401) {
+          callback(null, err.response);
+        }
+        else {
+          callback(err.response);
+        }
+      }
+      else {
+        callback(err);
+      }
     });
   }
 
@@ -94,7 +98,18 @@ exports.method = function(method, options, finalCallback) {
     type3options = _.extend(type3options, _.omit(httpreqOptions, 'headers'));
 
     // send type3 message to server:
-    httpreq[method](options.url, type3options, callback);
+    axios[method](options.url, type3options)
+    .then(function(res) {
+      callback(null, res);
+    })
+    .catch(function(err) {
+      if(err.response) {
+        callback(err.response);
+      }
+      else {
+        callback(err);
+      }
+    });
   }
 
 
