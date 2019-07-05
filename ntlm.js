@@ -6,7 +6,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-var crypto = require('crypto');
+var crypto = require('crypto-browserify');
+var Buffer = require('buffer');
 
 var flags = {
   NTLM_NegotiateUnicode                :  0x00000001,

@@ -9,11 +9,9 @@
 'use strict';
 
 var url = require('url');
-var httpreq = require('httpreq');
 var ntlm = require('./ntlm');
+var axios = require('axios');
 var _ = require('underscore');
-var http = require('http');
-var https = require('https');
 
 exports.method = function(method, options, finalCallback) {
   if(!options.workstation) options.workstation = '';
@@ -27,15 +25,6 @@ exports.method = function(method, options, finalCallback) {
   var reqUrl = url.parse(options.url);
   if(reqUrl.protocol == 'https:') isHttps = true;
 
-  // set keepaliveAgent (http or https):
-  var keepaliveAgent;
-
-  if(isHttps) {
-    keepaliveAgent = new https.Agent({keepAlive: true});
-  } else {
-    keepaliveAgent = new http.Agent({keepAlive: true});
-  }
-
   // build type1 request:
 
   function sendType1Message(callback) {
@@ -47,8 +36,7 @@ exports.method = function(method, options, finalCallback) {
         'Authorization': type1msg
       },
       timeout: options.timeout || 0,
-      agent: keepaliveAgent,
-      allowRedirects: false // don't redirect in httpreq, because http could change to https which means we need to change the keepaliveAgent
+      maxRedirects: 0
     };
 
     // pass along other options:
@@ -63,7 +51,13 @@ exports.method = function(method, options, finalCallback) {
     }
 
     // send type1 message to server:
-    httpreq[method](options.url, type1options, callback);
+    axios[method](options.url, type1options)
+    .then(function(res) {
+      callback(null, res);
+    })
+    .catch(function(err) {
+      callback(err);
+    });
   }
 
   function sendType3Message(res, callback) {
@@ -92,8 +86,7 @@ exports.method = function(method, options, finalCallback) {
         'Connection': 'Close',
         'Authorization': type3msg
       },
-      allowRedirects: false,
-      agent: keepaliveAgent
+      maxRedirects: 0
     };
 
     // pass along other options:
@@ -107,7 +100,7 @@ exports.method = function(method, options, finalCallback) {
 
   sendType1Message(function(err, res) {
     if(err) return finalCallback(err);
-    setImmediate(function() { // doesn't work without setImmediate()
+    setTimeout(function() {
       sendType3Message(res, finalCallback);
     });
   });
