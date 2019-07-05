@@ -7,7 +7,7 @@
  */
 
 var crypto = require('crypto-browserify');
-var Buffer = require('buffer');
+var Buffer = require('buffer').Buffer;
 
 var flags = {
   NTLM_NegotiateUnicode                :  0x00000001,
