@@ -20,7 +20,7 @@
     "type": "git",
     "url": "git://github.com/maa105/node-http-ntlm.git"
   },
-  "main": "./httpntlm-browserify.js",
+  "main": "./build/httpntlm-browserify.js",
   "licenses": [
     {
       "type": "MIT",
