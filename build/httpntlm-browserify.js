@@ -22409,7 +22409,7 @@ exports.createContext = Script.createContext = function (context) {
     return copy;
 };
 
-},{}],155:[function(require){ // removed module,exports to make it use the global exports/module
+},{}],155:[function(require){
 /**
  * Copyright (c) 2013 Sam Decrock https://github.com/SamDecrock/
  * All rights reserved.
@@ -22478,15 +22478,21 @@ exports.method = function(method, options, finalCallback) {
 
   function sendType3Message(res, callback) {
     // catch redirect here:
-    if(res.headers.location) {
+    if(res.headers.location) { // make sure your server has the following header Access-Control-Expose-Headers: location, www-authenticate  
       options.url = res.headers.location;
       return exports[method](options, finalCallback);
     }
 
-    if(!res.headers['www-authenticate']) {
-      return (options.ntlm && options.ntlm.strict)
-        ? callback(new Error('www-authenticate not found on response of second request'))
-        : callback(null, res);
+    if(!res.headers['www-authenticate']) { // make sure your server has the following header Access-Control-Expose-Headers: location, www-authenticate  
+      if(options.ntlm && options.ntlm.strict) {
+        return callback(new Error('www-authenticate not found on response of second request'));
+      }
+      else {
+        if(res.status === 401) {
+          console.warn('If this 401 response is unexpected, make sure your server sets "Access-Control-Expose-Headers" to "location, www-authenticate"');
+        }
+        return callback(null, res);
+      }
     }
 
     // parse type2 message from server:
