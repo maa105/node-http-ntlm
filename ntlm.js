@@ -6,8 +6,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-var crypto = require('crypto-browserify');
-var Buffer = require('buffer').Buffer;
+var crypto = require('crypto');
+var md4 = require('js-md4');
 
 var flags = {
   NTLM_NegotiateUnicode                :  0x00000001,
@@ -184,8 +184,8 @@ function createType3Message(msg2, options) {
 
   if(isNegotiateExtendedSecurity) {
     var pwhash = (nt_password != null) ? nt_password : create_NT_hashed_password_v1(password);
-     var clientChallenge = "";
-     for(var i = 0; i < 8; i++) {
+    var clientChallenge = "";
+    for(var i = 0; i < 8; i++) {
     clientChallenge += String.fromCharCode(Math.floor(Math.random()*256));
     }
     var clientChallengeBytes = new Buffer(clientChallenge, 'ascii');
@@ -335,7 +335,7 @@ function binaryArray2bytes(array) {
     '1111': 'F'
   };
 
-   var bufArray = [];
+  var bufArray = [];
 
   for(var i = 0; i < array.length; i += 8) {
     if((i + 7) > array.length)
@@ -343,21 +343,19 @@ function binaryArray2bytes(array) {
 
     var binString1 = '' + array[i] + '' + array[i + 1] + '' + array[i + 2] + '' + array[i + 3];
     var binString2 = '' + array[i + 4] + '' + array[i + 5] + '' + array[i + 6] + '' + array[i + 7];
-       var hexchar1 = binary2hex[binString1];
-       var hexchar2 = binary2hex[binString2];
+    var hexchar1 = binary2hex[binString1];
+    var hexchar2 = binary2hex[binString2];
 
-       var buf = new Buffer(hexchar1 + '' + hexchar2, 'hex');
-       bufArray.push(buf);
-     }
+    var buf = new Buffer(hexchar1 + '' + hexchar2, 'hex');
+    bufArray.push(buf);
+  }
 
-     return Buffer.concat(bufArray);
+  return Buffer.concat(bufArray);
 }
 
 function create_NT_hashed_password_v1(password) {
   var buf = new Buffer(password, 'utf16le');
-  var md4 = crypto.createHash('md4');
-  md4.update(buf);
-  return new Buffer(md4.digest());
+  return new Buffer(md4.digest(buf));
 }
 
 function calc_resp(password_hash, server_challenge) {
@@ -377,7 +375,7 @@ function calc_resp(password_hash, server_challenge) {
     des = crypto.createCipheriv('DES-ECB', insertZerosEvery7Bits(passHashPadded.slice(14,21)), '');
     resArray.push(des.update(server_challenge.slice(0,8)));
 
-     return Buffer.concat(resArray);
+    return Buffer.concat(resArray);
 }
 
 function ntlm2sr_calc_resp(responseKeyNT, serverChallenge, clientChallenge) {
