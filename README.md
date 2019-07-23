@@ -1,6 +1,6 @@
 # httpntlm-web-maa
 
-It's a fork from the [SamDecrock](https://github.com/SamDecrock) [httpntlm](https://github.com/SamDecrock/node-http-ntlm) module, made to work on the browser
+It's a fork from the [SamDecrock](https://github.com/SamDecrock) [httpntlm](https://github.com/SamDecrock/node-http-ntlm) module, made to work on the browser, NOTE: it uses [axios](https://www.npmjs.com/package/axios) internally so the response object is the same as that of [axios](https://www.npmjs.com/package/axios#response-schema) and the request option follows the same convention as that of [axios](https://www.npmjs.com/package/axios#request-config)
 
 __httpntlm__ is a Node.js/Browser library to do HTTP NTLM authentication
 
