@@ -32,7 +32,9 @@ exports.method = function(method, options, finalCallback) {
       timeout: options.timeout || 0,
       maxRedirects: 0
     };
-
+    
+    type1options.url = options.url;
+    type1options.method = method;
     // pass along other options:
     if(options.ntlm && options.ntlm.strict) {
       // strict no need to pass other parameters
@@ -41,11 +43,12 @@ exports.method = function(method, options, finalCallback) {
     else {
       // not strict pass other parameters so as to continue if everything passes
       type1options.headers = _.extend(type1options.headers, httpreqOptions.headers);
-      type1options = _.extend(type1options, _.omit(httpreqOptions, 'headers'));
+      type1options = _.extend(type1options, _.omit(httpreqOptions, 'body', 'data', 'headers'));
+      type1options.data = httpreqOptions.data || httpreqOptions.body;
     }
 
     // send type1 message to server:
-    axios[method](options.url, type1options)
+    axios.request(type1options)
     .then(function(res) {
       callback(null, res);
     })
@@ -101,10 +104,13 @@ exports.method = function(method, options, finalCallback) {
 
     // pass along other options:
     type3options.headers = _.extend(type3options.headers, httpreqOptions.headers);
-    type3options = _.extend(type3options, _.omit(httpreqOptions, 'headers'));
+    type3options = _.extend(type3options, _.omit(httpreqOptions, 'body', 'data', 'headers'));
+    type3options.url = options.url;
+    type3options.method = method;
+    type3options.data = httpreqOptions.data || httpreqOptions.body;
 
     // send type3 message to server:
-    axios[method](options.url, type3options)
+    axios.request(type3options)
     .then(function(res) {
       callback(null, res);
     })
