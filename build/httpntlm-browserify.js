@@ -22409,7 +22409,7 @@ exports.createContext = Script.createContext = function (context) {
     return copy;
 };
 
-},{}],155:[function(require){
+},{}],155:[function(require,module,exports){
 /**
  * Copyright (c) 2013 Sam Decrock https://github.com/SamDecrock/
  * All rights reserved.
@@ -22536,12 +22536,19 @@ exports.method = function(method, options, finalCallback) {
     });
   }
 
-
   sendType1Message(function(err, res) {
     if(err) return finalCallback(err);
-    setTimeout(function() {
-      sendType3Message(res, finalCallback);
-    });
+    if(200 <= res.status && res.status < 300) {
+      finalCallback(null, res);
+    }
+    else if(res.status !== 401) {
+      finalCallback(res);
+    }
+    else {
+      setTimeout(function() {
+        sendType3Message(res, finalCallback);
+      });
+    }
   });
 
 };
