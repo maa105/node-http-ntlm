@@ -9,112 +9,162 @@
 'use strict';
 
 var ntlm = require('./ntlm');
-var _ = require('underscore');
 
-exports.method = function(method, options, finalCallback) {
+function omit(obj) {
+  var toOmit = {};
+  for(var i = 1; i < arguments.length; i++) {
+    toOmit[arguments[i]] = true;
+  }
+  var ret = {};
+  for(var i in obj) {
+    if(!toOmit[i]) {
+      ret[i] = obj[i]
+    }
+  }
+  return ret;
+}
+
+exports.request = function(options) {
+
+  var _Promise = (options.Promise || Promise);
+
   if(!options.workstation) options.workstation = '';
   if(!options.domain) options.domain = '';
 
   // extract non-ntlm-options:
-  var httpreqOptions = _.omit(options, 'url', 'username', 'password', 'workstation', 'domain', 'request');
+  var httpReqExtraOptions = omit(options, 'method', 'url', 'headers', 'body', 'request', 'username', 'password', 'lm_password', 'nt_password', 'workstation', 'domain', 'timeout', 'maxRedirects');
+  var url = options.url;
+  var method = options.method;
+  var headers = options.headers;
+  var body = options.body;
   var request = options.request;
+  var timeout = options.timeout || 0;
+  var maxRedirects = options.maxRedirects || 0;
+  if(maxRedirects) {
+    maxRedirects++;
+  }
+  var isStrict = options.ntlm && options.ntlm.strict;
 
   // build type1 request:
 
-  function sendType1Message(callback) {
+  function sendType1Message() {
     var type1msg = ntlm.createType1Message(options);
 
     var type1options = {
-      headers:{
+      url: url,
+      method: method,
+      headers: {
         'Connection' : 'keep-alive',
         'Authorization': type1msg
       },
-      timeout: options.timeout || 0,
-      maxRedirects: 0
+      timeout: timeout,
+      maxRedirects: maxRedirects
     };
     
-    type1options.url = options.url;
-    type1options.method = method;
     // pass along other options:
-    if(options.ntlm && options.ntlm.strict) {
+    if(isStrict) {
       // strict no need to pass other parameters
-      type1options = _.extend({}, _.omit(httpreqOptions, 'headers', 'body'), type1options);
+      type1options = Object.assign(type1options, httpReqExtraOptions);
     }
     else {
       // not strict pass other parameters so as to continue if everything passes
-      type1options.headers = _.extend({}, httpreqOptions.headers, type1options.headers);
-      type1options = _.extend(type1options, _.omit(httpreqOptions, 'headers'));
+      type1options.headers = Object.assign({}, headers, type1options.headers);
+      type1options.body = body;
+      type1options = Object.assign(type1options, httpReqExtraOptions);
     }
 
     // send type1 message to server:
-    request(type1options)
-    .then(function(res) {
-      callback(null, res);
-    })
-    .catch(callback);
+    return request(type1options);
   }
 
-  function sendType3Message(res, callback) {
+  function sendType3Message(res) {
     // catch redirect here:
-    if(res.headers.location) { // make sure your server has the following header Access-Control-Expose-Headers: location, www-authenticate  
-      options.url = res.headers.location;
-      return exports[method](options, finalCallback);
+    if(res.headers.location) { // make sure your server has the following header Access-Control-Expose-Headers: location, www-authenticate
+      if(maxRedirects === 1) {
+        return _Promise.reject(new Error('Max redirect achieved'));
+      }
+      return exports.request(Object.assign({}, options, { url: res.headers.location, maxRedirects: maxRedirects ? maxRedirects - 1 : 0 }));
     }
 
     if(!res.headers['www-authenticate']) { // make sure your server has the following header Access-Control-Expose-Headers: location, www-authenticate  
-      if(options.ntlm && options.ntlm.strict) {
-        return callback(new Error('www-authenticate not found on response of second request'));
+      if(isStrict) {
+        return _Promise.reject(new Error('www-authenticate not found on response of second request'));
       }
       else {
         if(res.status === 401) {
           console.warn('If this 401 response is unexpected, make sure your server sets "Access-Control-Expose-Headers" to "location, www-authenticate"');
         }
-        return callback(null, res);
+        return _Promise.resolve(res);
       }
     }
 
     // parse type2 message from server:
-    var type2msg = ntlm.parseType2Message(res.headers['www-authenticate'], callback); //callback only happens on errors
-    if(!type2msg) return; // if callback returned an error, the parse-function returns with null
+    var type2msg;
+    try {
+      type2msg = ntlm.parseType2Message(res.headers['www-authenticate']);
+    }
+    catch(err) {
+      return _Promise.reject(err);
+    }
 
     // create type3 message:
     var type3msg = ntlm.createType3Message(type2msg, options);
 
     // build type3 request:
     var type3options = {
+      url: url,
+      method: method,
       headers: {
         'Connection': 'Close',
         'Authorization': type3msg
       },
-      maxRedirects: 0
+      maxRedirects: maxRedirects
     };
 
     // pass along other options:
-    type3options.headers = _.extend({}, httpreqOptions.headers, type3options.headers);
-    type3options = _.extend(type3options, _.omit(httpreqOptions, 'headers'));
-    type3options.url = options.url;
-    type3options.method = method;
+    type3options.headers = Object.assign({}, headers, type3options.headers);
+    type3options = Object.assign(type3options, httpReqExtraOptions);
 
     // send type3 message to server:
-    request(type3options)
-    .then(function(res) {
-      callback(null, res);
-    })
-    .catch(callback);
+    return request(type3options);
   }
 
-  sendType1Message(function(err, res) {
-    if(err) return finalCallback(err);
+  return sendType1Message()
+  .then(function(res) {
     if(res.status === 401) {
-      setTimeout(function() {
-        sendType3Message(res, finalCallback);
+      return new _Promise(function(resolve) {
+        setTimeout(function() {
+          resolve(sendType3Message(res));
+        });
       });
     }
     else {
-      finalCallback(null, res);
+      return res;
     }
   });
 
+};
+
+exports.method = function(method, options, finalCallback) {
+  options = Object.assign({ method }, options);
+  var ret = exports.request(options);
+  ret.then(function(res) {
+    try {
+      finalCallback(null, res);
+    }
+    catch(err) {
+      return err;
+    }
+  })
+  .catch(function(err) {
+    finalCallback(err);
+  })
+  .then(function(error) {
+    if(error) {
+      throw error;
+    }
+  });
+  return ret;
 };
 
 ['get', 'put', 'patch', 'post', 'delete', 'options'].forEach(function(method) {
