@@ -89,11 +89,13 @@ function internalRequest(options) {
 
   function sendType3Message(res) {
     // catch redirect here:
-    if(res.headers.location) { // make sure your server has the following header Access-Control-Expose-Headers: location, www-authenticate
-      return internalRequest(Object.assign({}, options, { url: res.headers.location }));
+    var location = res.headers.get ? res.headers.get('location') : res.headers['location'];
+    if(location) { // make sure your server has the following header Access-Control-Expose-Headers: location, www-authenticate
+      return internalRequest(Object.assign({}, options, { url: location }));
     }
 
-    if(!res.headers['www-authenticate']) { // make sure your server has the following header Access-Control-Expose-Headers: location, www-authenticate  
+    var wwwAuthenticate = res.headers.get ? res.headers.get('www-authenticate') : res.headers['www-authenticate'];
+    if(!wwwAuthenticate) { // make sure your server has the following header Access-Control-Expose-Headers: location, www-authenticate  
       if(isStrict) {
         return _Promise.reject(new Error('www-authenticate not found on response of second request'));
       }
@@ -108,7 +110,7 @@ function internalRequest(options) {
     // parse type2 message from server:
     var type2msg;
     try {
-      type2msg = ntlm.parseType2Message(res.headers['www-authenticate']);
+      type2msg = ntlm.parseType2Message(wwwAuthenticate);
     }
     catch(err) {
       return _Promise.reject(err);
@@ -138,11 +140,7 @@ function internalRequest(options) {
   return sendType1Message()
   .then(function(res) {
     if(res.status === 401) {
-      return new _Promise(function(resolve) {
-        setTimeout(function() {
-          resolve(sendType3Message(res));
-        });
-      });
+      return sendType3Message(res);
     }
     else {
       return res;
