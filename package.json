@@ -1,7 +1,7 @@
 {
   "name": "httpntlm-web-maa",
   "description": "fork of the famous httpntlm module by SamDecrock which is a library to do HTTP NTLM authentication, added an option to enable/disable strict ntlm, and made it work on the browser",
-  "version": "1.7.23",
+  "version": "1.7.24",
   "dependencies": {
     "js-md4": "^0.3.2"
   },
