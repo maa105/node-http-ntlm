@@ -30,7 +30,9 @@ function getRequest(options) {
   }
   var ret;
   try {
-    ret = fetch;
+    ret = function(options) {
+      return fetch(options.url, options);
+    };
   }
   catch(err) { }
   if(ret) {
