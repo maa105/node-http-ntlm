@@ -9,7 +9,6 @@
 'use strict';
 
 var ntlm = require('./ntlm');
-var axios = require('axios');
 var _ = require('underscore');
 
 exports.method = function(method, options, finalCallback) {
@@ -17,7 +16,8 @@ exports.method = function(method, options, finalCallback) {
   if(!options.domain) options.domain = '';
 
   // extract non-ntlm-options:
-  var httpreqOptions = _.omit(options, 'url', 'username', 'password', 'workstation', 'domain');
+  var httpreqOptions = _.omit(options, 'url', 'username', 'password', 'workstation', 'domain', 'request');
+  var request = options.request;
 
   // build type1 request:
 
@@ -42,29 +42,16 @@ exports.method = function(method, options, finalCallback) {
     }
     else {
       // not strict pass other parameters so as to continue if everything passes
-      type1options.headers = _.extend(type1options.headers, httpreqOptions.headers);
-      type1options = _.extend(type1options, _.omit(httpreqOptions, 'body', 'data', 'headers'));
-      type1options.data = httpreqOptions.data || httpreqOptions.body;
+      type1options.headers = _.extend({}, httpreqOptions.headers, type1options.headers);
+      type1options = _.extend(type1options, _.omit(httpreqOptions, 'headers'));
     }
 
     // send type1 message to server:
-    axios.request(type1options)
+    request(type1options)
     .then(function(res) {
       callback(null, res);
     })
-    .catch(function(err) {
-      if(err.response) {
-        if(err.response.status === 401) {
-          callback(null, err.response);
-        }
-        else {
-          callback(err.response);
-        }
-      }
-      else {
-        callback(err);
-      }
-    });
+    .catch(callback);
   }
 
   function sendType3Message(res, callback) {
@@ -103,39 +90,28 @@ exports.method = function(method, options, finalCallback) {
     };
 
     // pass along other options:
-    type3options.headers = _.extend(type3options.headers, httpreqOptions.headers);
-    type3options = _.extend(type3options, _.omit(httpreqOptions, 'body', 'data', 'headers'));
+    type3options.headers = _.extend({}, httpreqOptions.headers, type3options.headers);
+    type3options = _.extend(type3options, _.omit(httpreqOptions, 'headers'));
     type3options.url = options.url;
     type3options.method = method;
-    type3options.data = httpreqOptions.data || httpreqOptions.body;
 
     // send type3 message to server:
-    axios.request(type3options)
+    request(type3options)
     .then(function(res) {
       callback(null, res);
     })
-    .catch(function(err) {
-      if(err.response) {
-        callback(err.response);
-      }
-      else {
-        callback(err);
-      }
-    });
+    .catch(callback);
   }
 
   sendType1Message(function(err, res) {
     if(err) return finalCallback(err);
-    if(200 <= res.status && res.status < 300) {
-      finalCallback(null, res);
-    }
-    else if(res.status !== 401) {
-      finalCallback(res);
-    }
-    else {
+    if(res.status === 401) {
       setTimeout(function() {
         sendType3Message(res, finalCallback);
       });
+    }
+    else {
+      finalCallback(null, res);
     }
   });
 
