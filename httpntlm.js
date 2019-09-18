@@ -24,7 +24,22 @@ function omit(obj) {
   return ret;
 }
 
-exports.request = function(options) {
+function getRequest(options) {
+  if(options.request) {
+    return options.request;
+  }
+  var ret;
+  try {
+    ret = fetch;
+  }
+  catch(err) { }
+  if(ret) {
+    return ret;
+  }
+  throw new Error('No request function provided, and couldn\'t find fetch in scope!');
+}
+
+function internalRequest(options) {
 
   var _Promise = (options.Promise || Promise);
 
@@ -32,17 +47,12 @@ exports.request = function(options) {
   if(!options.domain) options.domain = '';
 
   // extract non-ntlm-options:
-  var httpReqExtraOptions = omit(options, 'method', 'url', 'headers', 'body', 'request', 'username', 'password', 'lm_password', 'nt_password', 'workstation', 'domain', 'timeout', 'maxRedirects');
+  var httpReqExtraOptions = omit(options, 'method', 'url', 'headers', 'body', 'request', 'username', 'password', 'lm_password', 'nt_password', 'workstation', 'domain', 'ntlm');
   var url = options.url;
   var method = options.method;
   var headers = options.headers;
   var body = options.body;
-  var request = options.request;
-  var timeout = options.timeout || 0;
-  var maxRedirects = options.maxRedirects || 0;
-  if(maxRedirects) {
-    maxRedirects++;
-  }
+  var request = getRequest(options);
   var isStrict = options.ntlm && options.ntlm.strict;
 
   // build type1 request:
@@ -56,9 +66,7 @@ exports.request = function(options) {
       headers: {
         'Connection' : 'keep-alive',
         'Authorization': type1msg
-      },
-      timeout: timeout,
-      maxRedirects: maxRedirects
+      }
     };
     
     // pass along other options:
@@ -80,10 +88,7 @@ exports.request = function(options) {
   function sendType3Message(res) {
     // catch redirect here:
     if(res.headers.location) { // make sure your server has the following header Access-Control-Expose-Headers: location, www-authenticate
-      if(maxRedirects === 1) {
-        return _Promise.reject(new Error('Max redirect achieved'));
-      }
-      return exports.request(Object.assign({}, options, { url: res.headers.location, maxRedirects: maxRedirects ? maxRedirects - 1 : 0 }));
+      return internalRequest(Object.assign({}, options, { url: res.headers.location }));
     }
 
     if(!res.headers['www-authenticate']) { // make sure your server has the following header Access-Control-Expose-Headers: location, www-authenticate  
@@ -117,8 +122,7 @@ exports.request = function(options) {
       headers: {
         'Connection': 'Close',
         'Authorization': type3msg
-      },
-      maxRedirects: maxRedirects
+      }
     };
 
     // pass along other options:
@@ -145,30 +149,39 @@ exports.request = function(options) {
 
 };
 
-exports.method = function(method, options, finalCallback) {
-  options = Object.assign({ method }, options);
-  var ret = exports.request(options);
-  ret.then(function(res) {
-    try {
-      finalCallback(null, res);
-    }
-    catch(err) {
-      return err;
-    }
-  })
-  .catch(function(err) {
-    finalCallback(err);
-  })
-  .then(function(error) {
-    if(error) {
-      throw error;
-    }
-  });
+exports.request = function(options, finalCallback) {
+  var ret = internalRequest(options);
+  if(finalCallback) {
+    ret.then(function(res) {
+      try {
+        finalCallback(null, res);
+      }
+      catch(err) {
+        return err;
+      }
+    })
+    .catch(function(err) {
+      finalCallback(err);
+    })
+    .then(function(error) {
+      if(error) {
+        throw error;
+      }
+    });
+  }
   return ret;
 };
 
+exports.method = function(method, options, finalCallback) {
+  options = Object.assign({ method }, options);
+  return exports.request(options, finalCallback);
+};
+
 ['get', 'put', 'patch', 'post', 'delete', 'options'].forEach(function(method) {
-  exports[method] = exports.method.bind(exports, method);
+  exports[method] = function(options, finalCallback) {
+    options = Object.assign({ method }, options);
+    return exports.request(options, finalCallback);
+  }
 });
 
 exports.ntlm = ntlm; //if you want to use the NTML functions yourself

@@ -23,7 +23,10 @@ httpntlm.get({
     password: 'stinks',
     workstation: 'choose.something',
     domain: '',
-    ntlm: { strict: true }
+    ntlm: { strict: true },
+    request: function(options) {
+      return fetch(options.url, options);
+    }
 }, function(err, res) {
     if(err) return err;
 
@@ -52,19 +55,26 @@ nt = new Buffer([150, 27, 7, 219, 220, 207, 134, 159, 42, 60, 153, 28, 131, 148,
 console.log(nt);
 
 
-httpntlm.get({
-    url: "https://someurl.com",
-    username: 'm$',
-    lm_password: lm,
-    nt_password: nt,
-    workstation: 'choose.something',
-    domain: '',
-    ntlm: { strict: false }
-}, function(err, res) {
-    if(err) return err;
-
+httpntlm.request({
+  method: 'get',
+  url: "https://someurl.com",
+  username: 'm$',
+  lm_password: lm,
+  nt_password: nt,
+  workstation: 'choose.something',
+  domain: '',
+  ntlm: { strict: false },
+  request: function(options) {
+    return fetch(options.url, options);
+  },
+  Promise: Promise
+})
+.then(function(res) {
     console.log(res.headers);
     console.log(res.body);
+})
+.catch(function(err) {
+  console.error(err);
 });
 
 /* you can save the array into your code and use it when you need it
@@ -86,19 +96,16 @@ httpntlm.get({
 - `url:`      _{String}_   URL to connect. (Required)
 - `username:` _{String}_   Username. (Required)
 - `password:` _{String}_   Password. (Required)
+- `method:`   _{String}_   method. (get,post etc...)
 - `workstation:` _{String}_ Name of workstation or `''`.
 - `domain:`   _{String}_   Name of domain or `''`.
 - `ntlm`: _{Object}_ [Optional] with boolean property strict
-
+- `request`: _{Function} a request function that actually does the http calls (defaults to fetch if it exists, else is Required)
+- `Promise`: _{Class} a promise class to use (defaults to global Promise)
 if you already got the encrypted password,you should use this two param to replace the 'password' param.
 
 - `lm_password` _{Buffer}_ encrypted lm password.(Required)
 - `nt_password` _{Buffer}_ encrypted nt password. (Required)
-
-You can also pass along all other options of [httpreq](https://github.com/SamDecrock/node-httpreq), including custom headers, cookies, body data, ... and use POST, PUT or DELETE instead of GET.
-
-
-
 
 ## Advanced
 
@@ -160,22 +167,7 @@ async.waterfall([
 
 ## Download binary files
 
-```javascript
-httpntlm.get({
-    url: "https://someurl.com/file.xls",
-    username: 'm$',
-    password: 'stinks',
-    workstation: 'choose.something',
-    domain: '',
-    binary: true
-}, function(err, response) {
-    if(err) return console.log(err);
-    fs.writeFile("file.xls", response.body, function(err) {
-        if(err) return console.log("error writing file");
-        console.log("file.xls saved!");
-    });
-});
-```
+This will depend on your request function you send in options. So you will need to set the options related to binary download in the options variable.
 
 ## More information
 
