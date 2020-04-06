@@ -131,6 +131,7 @@ function internalRequest(options) {
 
     // pass along other options:
     type3options.headers = Object.assign({}, headers, type3options.headers);
+    type3options.body = body;
     type3options = Object.assign(type3options, httpReqExtraOptions);
 
     // send type3 message to server:
